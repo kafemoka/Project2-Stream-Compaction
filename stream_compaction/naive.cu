@@ -50,6 +50,8 @@ void scan(int n, int *odata, const int *idata) {
 	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 
 	// run steps.
+	// no need to pad with 0s to get a power of 2 array here,
+	// this can be an "unbalanced" binary tree of ops.
 	int logn = ilog2ceil(n);
 	for (int d = 1; d <= logn; d++) {
 		naive_scan_step <<<dimGrid, dimBlock >>>(d, dev_x, dev_x_next);

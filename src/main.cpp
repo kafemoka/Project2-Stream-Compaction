@@ -81,6 +81,11 @@ int main(int argc, char* argv[]) {
 	StreamCompaction::Efficient::scan(8, c, small);
 	printCmpResult(8, smallScan, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small work efficient scan test, non-power-of-two.");
+	StreamCompaction::Efficient::scan(7, c, small);
+	printCmpResult(7, smallScan, c);
+
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, non-power-of-two");
     StreamCompaction::Efficient::scan(NPOT, c, a);
