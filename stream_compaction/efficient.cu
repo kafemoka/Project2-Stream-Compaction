@@ -55,8 +55,8 @@ void scan(int n, int *odata, const int *idata) {
 	}
 
 	//debug: peek at the array after upsweep
-	int peek[8];
-	cudaMemcpy(&peek, dev_x, sizeof(int) * 8, cudaMemcpyDeviceToHost);
+	//int peek[8];
+	//cudaMemcpy(&peek, dev_x, sizeof(int) * 8, cudaMemcpyDeviceToHost);
 
 	// Down-Sweep
 	int zero[1];
@@ -70,6 +70,23 @@ void scan(int n, int *odata, const int *idata) {
 	cudaFree(dev_x);
 }
 
+__global__ void temporary_array(int *x, int *temp) {
+	int k = threadIdx.x + (blockIdx.x * blockDim.x);
+	if (x[k] != 0) {
+		temp[k] = 1;
+	}
+	else {
+		temp[k] = 0;
+	}
+}
+
+__global__ void scatter(int *x, int *trueFalse, int* scan, int *out) {
+	int k = threadIdx.x + (blockIdx.x * blockDim.x);
+	if (trueFalse[k]) {
+		out[scan[k]] = x[k];
+	}
+}
+
 /**
  * Performs stream compaction on idata, storing the result into odata.
  * All zeroes are discarded.
@@ -80,8 +97,48 @@ void scan(int n, int *odata, const int *idata) {
  * @returns      The number of elements remaining after compaction.
  */
 int compact(int n, int *odata, const int *idata) {
-    // TODO
-    return -1;
+	dim3 dimBlock(n);
+	dim3 dimGrid(1);
+	int *dev_x;
+	int *dev_tmp;
+	cudaMalloc((void**)&dev_x, sizeof(int) * n);
+	cudaMalloc((void**)&dev_tmp, sizeof(int) * n);
+
+	// copy everything in idata over to the GPU.
+	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
+
+    // Step 1: compute temporary true/false array
+	temporary_array << <dimGrid, dimBlock >> >(dev_x, dev_tmp);
+
+	// Step 2: run efficient scan on the tmp array
+	// TODO: expose the CUDA relevant portions of efficient scan so we don't have to shunt around
+	int *trueArray = new int[n];
+	int *scanArray = new int[n];
+	cudaMemcpy(trueArray, dev_tmp, sizeof(int) * n, cudaMemcpyDeviceToHost);
+	scan(n, scanArray, trueArray);
+
+	// Step 3: scatter
+	int *dev_scatter;
+	cudaMalloc((void**)&dev_scatter, sizeof(int) * n);
+
+	int *dev_scan;
+	cudaMalloc((void**)&dev_scan, sizeof(int) * n);
+	cudaMemcpy(dev_scan, scanArray, sizeof(int) * n, cudaMemcpyHostToDevice);
+
+	scatter << <dimGrid, dimBlock >> >(dev_x, dev_tmp, dev_scan, dev_scatter);
+
+	cudaMemcpy(odata, dev_scatter, sizeof(int) * n, cudaMemcpyDeviceToHost);
+
+	int return_value = scanArray[n - 1];
+
+	delete trueArray;
+	delete scanArray;
+	cudaFree(dev_x);
+	cudaFree(dev_tmp);
+	cudaFree(dev_scan);
+	cudaFree(dev_scatter);
+
+	return return_value;
 }
 
 }
