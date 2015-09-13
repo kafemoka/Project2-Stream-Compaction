@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
 		small[i] = i;
 	}
 	int smallScan[8] = { 0, 0, 1, 3, 6, 10, 15, 21 };
+	int smallCompact[7] = { 1, 2, 3, 4, 5, 6, 7 };
 
 
     // Scan tests
@@ -122,6 +123,16 @@ int main(int argc, char* argv[]) {
 
     int count, expectedCount, expectedNPOT;
 
+	zeroArray(SIZE, c);
+	printDesc("small cpu compact without scan, power-of-two");
+	count = StreamCompaction::CPU::compactWithoutScan(8, c, small);
+	printCmpLenResult(count, 7, smallCompact, c);
+
+	zeroArray(SIZE, c);
+	printDesc("small cpu compact without scan, non-power-of-two");
+	count = StreamCompaction::CPU::compactWithoutScan(7, c, small);
+	printCmpLenResult(count, 6, smallCompact, c);
+
     zeroArray(SIZE, b);
     printDesc("cpu compact without scan, power-of-two");
     count = StreamCompaction::CPU::compactWithoutScan(SIZE, b, a);
@@ -136,22 +147,42 @@ int main(int argc, char* argv[]) {
     printArray(count, c, true);
     printCmpLenResult(count, expectedNPOT, b, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small cpu compact with scan, power-of-two");
+	count = StreamCompaction::CPU::compactWithScan(8, c, small);
+	printCmpLenResult(count, 7, smallCompact, c);
+
+	zeroArray(SIZE, c);
+	printDesc("small cpu compact with scan, non-power-of-two");
+	count = StreamCompaction::CPU::compactWithScan(7, c, small);
+	printCmpLenResult(count, 6, smallCompact, c);
+
     zeroArray(SIZE, c);
     printDesc("cpu compact with scan");
     count = StreamCompaction::CPU::compactWithScan(SIZE, c, a);
     printArray(count, c, true);
     printCmpLenResult(count, expectedCount, b, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small work-efficient compact with scan, power-of-two");
+	count = StreamCompaction::Efficient::compact(8, c, small);
+	printCmpLenResult(count, 7, smallCompact, c);
+
+	zeroArray(SIZE, c);
+	printDesc("small work-efficient compact with scan, non-power-of-two");
+	count = StreamCompaction::Efficient::compact(7, c, small);
+	printCmpLenResult(count, 6, smallCompact, c);
+
     zeroArray(SIZE, c);
     printDesc("work-efficient compact, power-of-two");
     count = StreamCompaction::Efficient::compact(SIZE, c, a);
-    //printArray(count, c, true);
+    printArray(count, c, true);
     printCmpLenResult(count, expectedCount, b, c);
 
     zeroArray(SIZE, c);
     printDesc("work-efficient compact, non-power-of-two");
     count = StreamCompaction::Efficient::compact(NPOT, c, a);
-    //printArray(count, c, true);
+    printArray(count, c, true);
     printCmpLenResult(count, expectedNPOT, b, c);
 	printf("done\n");
 }

@@ -59,8 +59,8 @@ int compactWithScan(int n, int *odata, const int *idata) {
 			odata[trueScan[i]] = idata[i];
 		}
 	}
+	int numRemaining = trueScan[n - 1] + trueArray[n - 1];
 	delete trueArray;
-	int numRemaining = trueScan[n - 1];
 	delete trueScan;
 	return numRemaining;
 }

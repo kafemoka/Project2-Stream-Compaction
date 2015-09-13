@@ -125,22 +125,26 @@ int compact(int n, int *odata, const int *idata) {
 	// 0 pad up to a power of 2 array length.
 	// copy everything in idata over to the GPU.
 	fill_by_value << <dimGrid, dimBlock >> >(0, dev_x);
-	cudaMemcpy(dev_x, idata, sizeof(int) * pow2, cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 
     // Step 1: compute temporary true/false array
 	temporary_array <<<dimGrid, dimBlock >>>(dev_x, dev_tmp);
 
 	// Step 2: run efficient scan on the tmp array
 	cudaMemcpy(dev_scan, dev_tmp, sizeof(int) * pow2, cudaMemcpyDeviceToDevice);
-		up_sweep_down_sweep(pow2, dev_scan);
+	up_sweep_down_sweep(pow2, dev_scan);
 
 	// Step 3: scatter
 	scatter <<<dimGrid, dimBlock >>>(dev_x, dev_tmp, dev_scan, dev_scatter);
 
-	cudaMemcpy(odata, dev_scatter, sizeof(int) * pow2, cudaMemcpyDeviceToHost);
+	cudaMemcpy(odata, dev_scatter, sizeof(int) * n, cudaMemcpyDeviceToHost);
 
-	int return_value;
-	cudaMemcpy(&return_value, dev_scan + (n - 1), sizeof(int),
+	int last_index;
+	cudaMemcpy(&last_index, dev_scan + (n - 1), sizeof(int),
+		cudaMemcpyDeviceToHost);
+
+	int last_true_false;
+	cudaMemcpy(&last_true_false, dev_tmp + (n - 1), sizeof(int),
 		cudaMemcpyDeviceToHost);
 
 	cudaFree(dev_x);
@@ -148,7 +152,7 @@ int compact(int n, int *odata, const int *idata) {
 	cudaFree(dev_scan);
 	cudaFree(dev_scatter);
 
-	return return_value;
+	return last_index + last_true_false;
 }
 
 }
