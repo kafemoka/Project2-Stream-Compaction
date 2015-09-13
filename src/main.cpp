@@ -18,6 +18,14 @@ int main(int argc, char* argv[]) {
     const int NPOT = SIZE - 3;
     int a[SIZE], b[SIZE], c[SIZE];
 
+	// the case in the slides, as a smaller test.
+	int small[8];
+	for (int i = 0; i < 8; i++) {
+		small[i] = i;
+	}
+	int smallScan[8] = { 0, 0, 1, 3, 6, 10, 15, 21 };
+
+
     // Scan tests
 
     printf("\n");
@@ -40,6 +48,11 @@ int main(int argc, char* argv[]) {
     printArray(NPOT, b, true);
     printCmpResult(NPOT, b, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small cpu scan test.");
+	StreamCompaction::CPU::scan(8, c, small);
+	printCmpResult(8, smallScan, c);
+
     zeroArray(SIZE, c);
     printDesc("naive scan, power-of-two");
     StreamCompaction::Naive::scan(SIZE, c, a);
@@ -52,11 +65,21 @@ int main(int argc, char* argv[]) {
     //printArray(SIZE, c, true);
     printCmpResult(NPOT, b, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small naive scan test.");
+	StreamCompaction::Naive::scan(8, c, small);
+	printCmpResult(8, smallScan, c);
+
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, power-of-two");
     StreamCompaction::Efficient::scan(SIZE, c, a);
     //printArray(SIZE, c, true);
     printCmpResult(SIZE, b, c);
+
+	zeroArray(SIZE, c);
+	printDesc("small work efficient scan test.");
+	StreamCompaction::Efficient::scan(8, c, small);
+	printCmpResult(8, smallScan, c);
 
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, non-power-of-two");
