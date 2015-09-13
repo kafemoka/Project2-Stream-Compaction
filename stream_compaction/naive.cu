@@ -24,15 +24,6 @@ __global__ void parallel_copy(int *data, int *copy) {
 	copy[i] = data[i];
 }
 
-__global__ void parallel_shift(int *inclusive, int *exclusive) {
-	int i = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (i == 0) {
-		exclusive[i] = 0;
-		return;
-	}
-	exclusive[i] = inclusive[i - 1];
-}
-
 /**
  * Performs prefix-sum (aka scan) on idata, storing the result into odata.
  */
@@ -42,10 +33,8 @@ void scan(int n, int *odata, const int *idata) {
 	dim3 dimGrid(1);
 	int *dev_x;
 	int *dev_x_next;
-	int *dev_exclusive;
 	cudaMalloc((void**)&dev_x, sizeof(int) * n);
 	cudaMalloc((void**)&dev_x_next, sizeof(int) * n);
-	cudaMalloc((void**)&dev_exclusive, sizeof(int) * n);
 
 	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 
@@ -58,12 +47,11 @@ void scan(int n, int *odata, const int *idata) {
 		parallel_copy <<<dimGrid, dimBlock >>>(dev_x_next, dev_x);
 	}
 
-	parallel_shift << <dimGrid, dimBlock >> >(dev_x, dev_exclusive);
+	cudaMemcpy(odata + 1, dev_x, sizeof(int) * (n - 1), cudaMemcpyDeviceToHost);
+	odata[0] = 0;
+	
 	cudaFree(dev_x);
 	cudaFree(dev_x_next);
-
-	cudaMemcpy(odata, dev_exclusive, sizeof(int) * n, cudaMemcpyDeviceToHost);
-	cudaFree(dev_exclusive);
 }
 
 }
