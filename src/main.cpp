@@ -92,6 +92,11 @@ int main(int argc, char* argv[]) {
     //printArray(NPOT, c, true);
     printCmpResult(NPOT, b, c);
 
+	zeroArray(SIZE, c);
+	printDesc("small thrust scan.");
+	StreamCompaction::Thrust::scan(8, c, small);
+	printCmpResult(8, smallScan, c);
+
     zeroArray(SIZE, c);
     printDesc("thrust scan, power-of-two");
     StreamCompaction::Thrust::scan(SIZE, c, a);

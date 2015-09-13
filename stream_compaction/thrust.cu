@@ -13,9 +13,21 @@ namespace Thrust {
  * Performs prefix-sum (aka scan) on idata, storing the result into odata.
  */
 void scan(int n, int *odata, const int *idata) {
-    // TODO use `thrust::exclusive_scan`
+    // use `thrust::exclusive_scan`
     // example: for device_vectors dv_in and dv_out:
     // thrust::exclusive_scan(dv_in.begin(), dv_in.end(), dv_out.begin());
+
+	// Create a thrust::device_vector from a thrust::host_vector
+	thrust::host_vector<int> v_in(idata, idata + n);
+	thrust::device_vector<int> device_v_in(v_in);
+	thrust::device_vector<int> device_v_out(n);
+	thrust::exclusive_scan(device_v_in.begin(), device_v_in.end(),
+		device_v_out.begin());
+
+	// copy back over
+	for (int i = 0; i < n; i++) {
+		odata[i] = device_v_out[i];
+	}
 }
 
 }
