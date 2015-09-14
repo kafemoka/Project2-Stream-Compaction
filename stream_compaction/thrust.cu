@@ -9,6 +9,28 @@
 namespace StreamCompaction {
 namespace Thrust {
 
+cudaEvent_t start, stop;
+
+static void setup_timer_events() {
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+	cudaEventRecord(start);
+}
+
+static float teardown_timer_events() {
+	cudaEventRecord(stop);
+
+	cudaEventSynchronize(stop);
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+
+	return milliseconds;
+}
+
 /**
  * Performs prefix-sum (aka scan) on idata, storing the result into odata.
  */
@@ -21,8 +43,18 @@ void scan(int n, int *odata, const int *idata) {
 	thrust::host_vector<int> v_in(idata, idata + n);
 	thrust::device_vector<int> device_v_in(v_in);
 	thrust::device_vector<int> device_v_out(n);
+
+	if (BENCHMARK) {
+		setup_timer_events();
+	}
+
 	thrust::exclusive_scan(device_v_in.begin(), device_v_in.end(),
 		device_v_out.begin());
+
+	if (BENCHMARK) {
+		printf("%f microseconds.\n",
+			teardown_timer_events() * 1000.0f);
+	}
 
 	// copy back over
 	for (int i = 0; i < n; i++) {

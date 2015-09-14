@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+#include <chrono>
 
 namespace StreamCompaction {
 namespace CPU {

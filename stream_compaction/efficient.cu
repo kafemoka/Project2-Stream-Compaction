@@ -6,6 +6,28 @@
 namespace StreamCompaction {
 namespace Efficient {
 
+cudaEvent_t start, stop;
+
+static void setup_timer_events() {
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+	cudaEventRecord(start);
+}
+
+static float teardown_timer_events() {
+	cudaEventRecord(stop);
+
+	cudaEventSynchronize(stop);
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+
+	return milliseconds;
+}
+
 // TODO: __global__
 
 __global__ void upsweep_step(int d, int *x) {
@@ -68,8 +90,17 @@ void scan(int n, int *odata, const int *idata) {
 
 	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 
+	if (BENCHMARK) {
+		setup_timer_events();
+	}
+
 	// up sweep and down sweep
 	up_sweep_down_sweep(pow2, dev_x);
+
+	if (BENCHMARK) {
+		printf("%f microseconds.\n",
+			teardown_timer_events() * 1000.0f);
+	}
 
 	cudaMemcpy(odata, dev_x, sizeof(int) * n, cudaMemcpyDeviceToHost);
 	cudaFree(dev_x);
@@ -145,6 +176,10 @@ int compact(int n, int *odata, const int *idata) {
 	fill_by_value << <dimGrid, dimBlock >> >(0, dev_x);
 	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 
+	if (BENCHMARK) {
+		setup_timer_events();
+	}
+
     // Step 1: compute temporary true/false array
 	temporary_array <<<dimGrid, dimBlock >>>(dev_x, dev_tmp);
 
@@ -154,6 +189,11 @@ int compact(int n, int *odata, const int *idata) {
 
 	// Step 3: scatter
 	scatter <<<dimGrid, dimBlock >>>(dev_x, dev_tmp, dev_scan, dev_scatter);
+
+	if (BENCHMARK) {
+		printf("%f microseconds.\n",
+			teardown_timer_events() * 1000.0f);
+	}
 
 	cudaMemcpy(odata, dev_scatter, sizeof(int) * n, cudaMemcpyDeviceToHost);
 

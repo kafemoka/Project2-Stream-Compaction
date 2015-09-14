@@ -14,7 +14,7 @@
 #include "testing_helpers.hpp"
 
 int main(int argc, char* argv[]) {
-    const int SIZE = 1 << 13;
+    const int SIZE = 1 << 15;
     const int NPOT = SIZE - 3;
     int a[SIZE], b[SIZE], c[SIZE];
 
@@ -26,6 +26,51 @@ int main(int argc, char* argv[]) {
 	int smallScan[8] = { 0, 0, 1, 3, 6, 10, 15, 21 };
 	int smallCompact[7] = { 1, 2, 3, 4, 5, 6, 7 };
 
+	// set "false" for standard tests
+	if (true) {
+		genArray(SIZE - 1, a, 50);  // Leave a 0 at the end to test that edge case
+		a[SIZE - 1] = 0;
+		printf("array size: %i\n", SIZE);
+		int count;
+
+		zeroArray(SIZE, b);
+		printDesc("cpu scan, power-of-two");
+		StreamCompaction::CPU::scan(SIZE, b, a);
+		printf("\n");
+
+		zeroArray(SIZE, c);
+		printDesc("naive scan, power-of-two");
+		StreamCompaction::Naive::scan(SIZE, c, a);
+		printf("\n");
+
+		zeroArray(SIZE, c);
+		printDesc("work-efficient scan, power-of-two");
+		StreamCompaction::Efficient::scan(SIZE, c, a);
+		printf("\n");
+
+		zeroArray(SIZE, c);
+		printDesc("thrust scan, power-of-two");
+		StreamCompaction::Thrust::scan(SIZE, c, a);
+		printf("\n");
+
+		zeroArray(SIZE, b);
+		printDesc("cpu compact without scan, power-of-two");
+		count = StreamCompaction::CPU::compactWithoutScan(SIZE, b, a);
+		printf("\n");
+
+		zeroArray(SIZE, c);
+		printDesc("cpu compact with scan");
+		count = StreamCompaction::CPU::compactWithScan(SIZE, c, a);
+		printf("\n");
+
+		zeroArray(SIZE, c);
+		printDesc("work-efficient compact, power-of-two");
+		count = StreamCompaction::Efficient::compact(SIZE, c, a);
+		printf("\n");
+
+		printf("benchmark tests done\n");
+		return 0;
+	}
 
     // Scan tests
 

@@ -6,6 +6,28 @@
 namespace StreamCompaction {
 namespace Naive {
 
+cudaEvent_t start, stop;
+
+static void setup_timer_events() {
+	cudaEventCreate(&start);
+	cudaEventCreate(&stop);
+
+	cudaEventRecord(start);
+}
+
+static float teardown_timer_events() {
+	cudaEventRecord(stop);
+
+	cudaEventSynchronize(stop);
+	float milliseconds = 0;
+	cudaEventElapsedTime(&milliseconds, start, stop);
+
+	cudaEventDestroy(start);
+	cudaEventDestroy(stop);
+
+	return milliseconds;
+}
+
 // TODO: __global__
 
 __global__ void naive_scan_step(int d, int *x_1, int *x_2) {
@@ -47,6 +69,10 @@ void scan(int n, int *odata, const int *idata) {
 	cudaMemcpy(dev_x, idata, sizeof(int) * n, cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_x_next, dev_x, sizeof(int) * n, cudaMemcpyDeviceToDevice);
 
+	if (BENCHMARK) {
+		setup_timer_events();
+	}
+
 	// run steps.
 	// no need to pad with 0s to get a power of 2 array here,
 	// this can be an "unbalanced" binary tree of ops.
@@ -56,6 +82,10 @@ void scan(int n, int *odata, const int *idata) {
 		int *temp = dev_x_next;
 		dev_x_next = dev_x;
 		dev_x = temp;
+	}
+	if (BENCHMARK) {
+		printf("%f microseconds.\n",
+			teardown_timer_events() * 1000.0f);
 	}
 
 	cudaMemcpy(odata + 1, dev_x, sizeof(int) * (n - 1), cudaMemcpyDeviceToHost);
