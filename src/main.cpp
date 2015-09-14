@@ -14,7 +14,7 @@
 #include "testing_helpers.hpp"
 
 int main(int argc, char* argv[]) {
-    const int SIZE = 1 << 8;
+    const int SIZE = 1 << 9;
     const int NPOT = SIZE - 3;
     int a[SIZE], b[SIZE], c[SIZE];
 
@@ -70,6 +70,11 @@ int main(int argc, char* argv[]) {
 	printDesc("small naive scan test.");
 	StreamCompaction::Naive::scan(8, c, small);
 	printCmpResult(8, smallScan, c);
+
+	zeroArray(SIZE, c);
+	printDesc("small naive scan test, non-power-of-two.");
+	StreamCompaction::Naive::scan(7, c, small);
+	printCmpResult(7, smallScan, c);
 
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, power-of-two");
