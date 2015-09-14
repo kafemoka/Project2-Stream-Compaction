@@ -30,9 +30,8 @@ static float teardown_timer_events() {
 
 // TODO: __global__
 
-__global__ void naive_scan_step(int d, int *x_1, int *x_2) {
+__global__ void naive_scan_step(int offset, int *x_1, int *x_2) {
 	int i = threadIdx.x + (blockIdx.x * blockDim.x);
-	int offset = powf(2, d - 1);
 	if (i >= offset) {
 		x_2[i] = x_1[i - offset] + x_1[i];
 	}
@@ -78,7 +77,8 @@ void scan(int n, int *odata, const int *idata) {
 	// this can be an "unbalanced" binary tree of ops.
 	int logn = ilog2ceil(n);
 	for (int d = 1; d <= logn; d++) {
-		naive_scan_step <<<dimGrid, dimBlock >>>(d, dev_x, dev_x_next);
+		int offset = powf(2, d - 1);
+		naive_scan_step <<<dimGrid, dimBlock >>>(offset, dev_x, dev_x_next);
 		int *temp = dev_x_next;
 		dev_x_next = dev_x;
 		dev_x = temp;

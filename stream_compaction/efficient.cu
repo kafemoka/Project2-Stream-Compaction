@@ -30,22 +30,22 @@ static float teardown_timer_events() {
 
 // TODO: __global__
 
-__global__ void upsweep_step(int d, int *x) {
+__global__ void upsweep_step(int d_offset_plus, int d_offset, int *x) {
 	int k = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (k % (int) powf(2, d + 1)) {
+	if (k % d_offset_plus) {
 		return;
 	}
-	x[k + (int)powf(2, d + 1) - 1] += x[k + (int)powf(2, d) - 1];
+	x[k + d_offset_plus - 1] += x[k + d_offset - 1];
 }
 
-__global__ void downsweep_step(int d, int *x) {
+__global__ void downsweep_step(int d_offset_plus, int d_offset, int *x) {
 	int k = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (k % (int)powf(2, d + 1)) {
+	if (k % d_offset_plus) {
 		return;
 	}
-	int t = x[k + (int)powf(2, d) - 1];
-	x[k + (int)powf(2, d) - 1] = x[k + (int)powf(2, d + 1) - 1];
-	x[k + (int)powf(2, d + 1) - 1] += t;
+	int t = x[k + d_offset - 1];
+	x[k + d_offset - 1] = x[k + d_offset_plus - 1];
+	x[k + d_offset_plus - 1] += t;
 }
 
 __global__ void fill_by_value(int val, int *x) {
@@ -116,7 +116,9 @@ void up_sweep_down_sweep(int n, int *dev_data1) {
 
 	// Up Sweep
 	for (int d = 0; d < logn; d++) {
-		upsweep_step << <dimGrid, dimBlock >> >(d, dev_data1);
+		int d_offset_plus = (int)pow(2, d + 1);
+		int d_offset = (int)pow(2, d);
+		upsweep_step << <dimGrid, dimBlock >> >(d_offset_plus, d_offset, dev_data1);
 	}
 
 	//debug: peek at the array after upsweep
@@ -128,7 +130,9 @@ void up_sweep_down_sweep(int n, int *dev_data1) {
 	zero[0] = 0;
 	cudaMemcpy(&dev_data1[n - 1], zero, sizeof(int) * 1, cudaMemcpyHostToDevice);
 	for (int d = logn - 1; d >= 0; d--) {
-		downsweep_step << <dimGrid, dimBlock >> >(d, dev_data1);
+		int d_offset_plus = (int)pow(2, d + 1);
+		int d_offset = (int)pow(2, d);
+		downsweep_step << <dimGrid, dimBlock >> >(d_offset_plus, d_offset, dev_data1);
 	}
 }
 

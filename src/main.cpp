@@ -14,7 +14,7 @@
 #include "testing_helpers.hpp"
 
 int main(int argc, char* argv[]) {
-    const int SIZE = 1 << 15;
+    const int SIZE = 1 << 8;
     const int NPOT = SIZE - 3;
     int a[SIZE], b[SIZE], c[SIZE];
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
 	// set "true" for timed tests
 	// also set BENCHMARK in common to 1
-	if (false) {
+	if (true) {
 		genArray(SIZE - 1, a, 50);  // Leave a 0 at the end to test that edge case
 		a[SIZE - 1] = 0;
 		printf("array size: %i\n", SIZE);
