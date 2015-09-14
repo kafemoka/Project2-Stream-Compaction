@@ -8,24 +8,22 @@ namespace Efficient {
 
 // TODO: __global__
 
-__global__ void upsweep_step(int d, int *x, int *out) {
+__global__ void upsweep_step(int d, int *x) {
 	int k = threadIdx.x + (blockIdx.x * blockDim.x);
 	if (k % (int) powf(2, d + 1)) {
 		return;
 	}
-	int out_index = k + (int)powf(2, d + 1) - 1;
-	out[out_index] = x[out_index] + x[k + (int)powf(2, d) - 1];
+	x[k + (int)powf(2, d + 1) - 1] += x[k + (int)powf(2, d) - 1];
 }
 
-__global__ void downsweep_step(int d, int *x, int *out) {
+__global__ void downsweep_step(int d, int *x) {
 	int k = threadIdx.x + (blockIdx.x * blockDim.x);
 	if (k % (int)powf(2, d + 1)) {
 		return;
 	}
-	int left_index = k + (int)powf(2, d) - 1;
-	int right_index = k + (int)powf(2, d + 1) - 1;
-	out[left_index] = x[right_index];
-	out[right_index] = x[right_index] + x[left_index];
+	int t = x[k + (int)powf(2, d) - 1];
+	x[k + (int)powf(2, d) - 1] = x[k + (int)powf(2, d + 1) - 1];
+	x[k + (int)powf(2, d + 1) - 1] += t;
 }
 
 __global__ void fill_by_value(int val, int *x) {
@@ -85,33 +83,22 @@ void up_sweep_down_sweep(int n, int *dev_data1) {
 	dim3 dimGrid;
 	setup_dimms(dimBlock, dimGrid, n);
 
-	int *dev_data2;
-	cudaMalloc((void**)&dev_data2, sizeof(int) * n);
-	cudaMemcpy(dev_data2, dev_data1, sizeof(int) * n, cudaMemcpyDeviceToDevice);
-
 	// Up Sweep
 	for (int d = 0; d < logn; d++) {
-		upsweep_step <<<dimGrid, dimBlock >>>(d, dev_data1, dev_data2);
-		cudaMemcpy(dev_data1, dev_data2, sizeof(int) * n, cudaMemcpyDeviceToDevice);
+		upsweep_step << <dimGrid, dimBlock >> >(d, dev_data1);
 	}
 
 	//debug: peek at the array after upsweep
 	//int peek1[8];
-	//int peek2[8];
 	//cudaMemcpy(&peek1, dev_data1, sizeof(int) * 8, cudaMemcpyDeviceToHost);
-	//cudaMemcpy(&peek2, dev_data2, sizeof(int) * 8, cudaMemcpyDeviceToHost);
 
 	// Down-Sweep
 	int zero[1];
 	zero[0] = 0;
 	cudaMemcpy(&dev_data1[n - 1], zero, sizeof(int) * 1, cudaMemcpyHostToDevice);
-	cudaMemcpy(dev_data2, dev_data1, sizeof(int) * n, cudaMemcpyDeviceToDevice);
 	for (int d = logn - 1; d >= 0; d--) {
-		downsweep_step << <dimGrid, dimBlock >> >(d, dev_data1, dev_data2);
-		cudaMemcpy(dev_data1, dev_data2, sizeof(int) * n, cudaMemcpyDeviceToDevice);
+		downsweep_step << <dimGrid, dimBlock >> >(d, dev_data1);
 	}
-
-	cudaFree(dev_data2);
 }
 
 __global__ void temporary_array(int *x, int *temp) {
