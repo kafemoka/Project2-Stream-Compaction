@@ -8,14 +8,14 @@ namespace Naive {
 
 // TODO: __global__
 
-__global__ void naive_scan_step(int d, int *x, int *x_next) {
+__global__ void naive_scan_step(int d, int *x_1, int *x_2) {
 	int i = threadIdx.x + (blockIdx.x * blockDim.x);
 	int offset = powf(2, d - 1);
 	if (i >= offset) {
-		x_next[i] = x[i - offset] + x[i];
+		x_2[i] = x_1[i - offset] + x_1[i];
 	}
 	else {
-		x_next[i] = x[i];
+		x_2[i] = x_1[i];
 	}
 }
 

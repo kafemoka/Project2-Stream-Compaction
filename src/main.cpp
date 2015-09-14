@@ -76,12 +76,6 @@ int main(int argc, char* argv[]) {
 	StreamCompaction::Naive::scan(7, c, small);
 	printCmpResult(7, smallScan, c);
 
-    zeroArray(SIZE, c);
-    printDesc("work-efficient scan, power-of-two");
-    StreamCompaction::Efficient::scan(SIZE, c, a);
-    //printArray(SIZE, c, true);
-    printCmpResult(SIZE, b, c);
-
 	zeroArray(SIZE, c);
 	printDesc("small work efficient scan test.");
 	StreamCompaction::Efficient::scan(8, c, small);
@@ -91,6 +85,12 @@ int main(int argc, char* argv[]) {
 	printDesc("small work efficient scan test, non-power-of-two.");
 	StreamCompaction::Efficient::scan(7, c, small);
 	printCmpResult(7, smallScan, c);
+
+    zeroArray(SIZE, c);
+    printDesc("work-efficient scan, power-of-two");
+    StreamCompaction::Efficient::scan(SIZE, c, a);
+    //printArray(SIZE, c, true);
+    printCmpResult(SIZE, b, c);
 
     zeroArray(SIZE, c);
     printDesc("work-efficient scan, non-power-of-two");
