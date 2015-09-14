@@ -33,6 +33,23 @@ __global__ void fill_by_value(int val, int *x) {
 	x[k] = val;
 }
 
+static void setup_dimms(dim3 &dimBlock, dim3 &dimGrid, int n) {
+	cudaDeviceProp deviceProp;
+	cudaGetDeviceProperties(&deviceProp, 0);
+	int tpb = deviceProp.maxThreadsPerBlock;
+	int blockWidth = fmin(n, tpb);
+	int blocks = 1;
+	if (blockWidth != n) {
+		blocks = n / tpb;
+		if (n % tpb) {
+			blocks ++;
+		}
+	}
+
+	dimBlock = dim3(blockWidth);
+	dimGrid = dim3(blocks);
+}
+
 /**
  * Performs prefix-sum (aka scan) on idata, storing the result into odata.
  */
@@ -43,8 +60,10 @@ void scan(int n, int *odata, const int *idata) {
 	int logn = ilog2ceil(n);
 	int pow2 = (int)pow(2, logn);
 
-	dim3 dimBlock(pow2);
-	dim3 dimGrid(1);
+	dim3 dimBlock;
+	dim3 dimGrid;
+	setup_dimms(dimBlock, dimGrid, pow2);
+
 	int *dev_x;
 	cudaMalloc((void**)&dev_x, sizeof(int) * pow2);
 	fill_by_value <<<dimGrid, dimBlock >>>(0, dev_x);
@@ -61,8 +80,10 @@ void scan(int n, int *odata, const int *idata) {
 // exposed up sweep and down sweep. expects powers of two!
 void up_sweep_down_sweep(int n, int *dev_data1) {
 	int logn = ilog2ceil(n);
-	dim3 dimBlock(n);
-	dim3 dimGrid(1);
+
+	dim3 dimBlock;
+	dim3 dimGrid;
+	setup_dimms(dimBlock, dimGrid, n);
 
 	int *dev_data2;
 	cudaMalloc((void**)&dev_data2, sizeof(int) * n);
@@ -95,12 +116,7 @@ void up_sweep_down_sweep(int n, int *dev_data1) {
 
 __global__ void temporary_array(int *x, int *temp) {
 	int k = threadIdx.x + (blockIdx.x * blockDim.x);
-	if (x[k] != 0) {
-		temp[k] = 1;
-	}
-	else {
-		temp[k] = 0;
-	}
+	temp[k] = (x[k] != 0);
 }
 
 __global__ void scatter(int *x, int *trueFalse, int* scan, int *out) {
@@ -123,8 +139,10 @@ int compact(int n, int *odata, const int *idata) {
 	int logn = ilog2ceil(n);
 	int pow2 = (int)pow(2, logn);
 
-	dim3 dimBlock(pow2);
-	dim3 dimGrid(1);
+	dim3 dimBlock;
+	dim3 dimGrid;
+	setup_dimms(dimBlock, dimGrid, pow2);
+
 	int *dev_x;
 	int *dev_tmp;
 	int *dev_scatter;

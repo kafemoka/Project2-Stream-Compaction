@@ -24,8 +24,21 @@ __global__ void naive_scan_step(int d, int *x_1, int *x_2) {
  */
 void scan(int n, int *odata, const int *idata) {
     // copy everything in idata over to the GPU
-	dim3 dimBlock(n);
-	dim3 dimGrid(1);
+	cudaDeviceProp deviceProp;
+	cudaGetDeviceProperties(&deviceProp, 0);
+	int tpb = deviceProp.maxThreadsPerBlock;
+	int blockWidth = fmin(n, tpb);
+	int blocks = 1;
+	if (blockWidth != n) {
+		blocks = n / tpb;
+		if (n % tpb) {
+			blocks++;
+		}
+	}
+
+	dim3 dimBlock(blockWidth);
+	dim3 dimGrid(blocks);
+
 	int *dev_x;
 	int *dev_x_next;
 	cudaMalloc((void**)&dev_x, sizeof(int) * n);
