@@ -26,7 +26,8 @@ int main(int argc, char* argv[]) {
 	int smallScan[8] = { 0, 0, 1, 3, 6, 10, 15, 21 };
 	int smallCompact[7] = { 1, 2, 3, 4, 5, 6, 7 };
 
-	// set "false" for standard tests
+	// set "true" for timed tests
+	// also set BENCHMARK in common to 1
 	if (true) {
 		genArray(SIZE - 1, a, 50);  // Leave a 0 at the end to test that edge case
 		a[SIZE - 1] = 0;
