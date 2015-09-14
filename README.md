@@ -29,6 +29,10 @@ Further analysis is required. It is also possible that the CPU implementation ha
 Another note is that this project implements efficient scan by modifying an array on the device in-place in both the upsweep and downsweep stages.
 There were some concerns over race conditions when multiple blocks are needed, however, these did not arise. The project's commit history includes a version of efficient scan that uses an input and output array for the kernel but requires a memcpy to synchronize data in the two from the host in between passes.
 
+## Notes
+I added an additional "small" case test for debugging use.
+Efficient Scan also has disabled desting code for "peeking" at the results of up-sweep before down-sweep.
+
 ## Example Output
 
 ```
