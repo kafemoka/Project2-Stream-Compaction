@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
 	// set "true" for timed tests
 	// also set BENCHMARK in common to 1
-	if (true) {
+	if (false) {
 		genArray(SIZE - 1, a, 50);  // Leave a 0 at the end to test that edge case
 		a[SIZE - 1] = 0;
 		printf("array size: %i\n", SIZE);
